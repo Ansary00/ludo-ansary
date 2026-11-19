@@ -12,7 +12,7 @@ import PlayerCard from '../components/PlayerCard.tsx';
 import RoomTopBar from '../components/RoomTopBar.tsx';
 import { useCountdown } from '../components/Toggle.tsx';
 import { useTokenAnimation } from '../hooks/useTokenAnimation.ts';
-import { COLOR_LABEL, initials, ordinal } from '../lib/format.ts';
+import { COLOR_LABEL, initials, ordinal, plural } from '../lib/format.ts';
 import type { RoomSession } from '../lib/session.tsx';
 import { useSettings } from '../lib/settings.tsx';
 
@@ -257,7 +257,8 @@ export default function GameView({ session, onExit }: { session: RoomSession; on
                         {ranking.color === me.color && <em> you</em>}
                       </span>
                       <span className="result__player-stats">
-                        {ranking.tokensHome}/4 home · {ranking.captures} captures · {ranking.sixes} sixes
+                        {ranking.tokensHome}/4 home · {plural(ranking.captures, 'capture')} ·{' '}
+                        {plural(ranking.sixes, 'six', 'sixes')}
                       </span>
                     </span>
                     {isWinner && <IconTrophy size={18} className="result__trophy" />}

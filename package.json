@@ -4,6 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Premium browser-based online multiplayer Ludo — zero-cost stack.",
+  "homepage": "https://ludo-ansary.onrender.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ansary00/ludo-ansary.git"
+  },
   "engines": {
     "node": ">=20 <25"
   },

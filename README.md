@@ -1,5 +1,7 @@
 # Ludo ANSARY
 
+**[▶ Play Ludo ANSARY](https://ludo-ansary.onrender.com)** — free, no account, no install.
+
 A complete, server-authoritative online Ludo game for the browser. Private
 rooms, invite links, classic rules, reconnection, and a fully responsive
 mobile-first interface — built to run on a single free Node.js service with no

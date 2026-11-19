@@ -1,5 +1,8 @@
 # Zero-cost deployment guide
 
+**Live deployment:** <https://ludo-ansary.onrender.com> (Render Free, blueprint
+`render.yaml`, repository <https://github.com/Ansary00/ludo-ansary>).
+
 This project is designed to run as **one Node.js service** that serves the
 built React client, the HTTP API, and Socket.IO from the same origin. That is
 the simplest and cheapest deployment: no separate static host, no CORS
@@ -241,13 +244,16 @@ Notes:
 
 ## Post-deploy checklist
 
-- [ ] `/api/health` returns `ok: true`.
-- [ ] The home page loads over HTTPS.
-- [ ] A 4-player room can be created and the invite link opens.
-- [ ] Two browsers can join, ready up, and start.
-- [ ] Dice rolls and moves sync in real time in both directions.
-- [ ] Refreshing a player restores the same seat.
-- [ ] The game reaches the result overlay and shows rankings.
-- [ ] The host can start a rematch.
-- [ ] The layout works at a 390 px mobile width.
-- [ ] DevTools shows a WebSocket `101` connection and no console errors.
+Verified against the live deployment on **November 19, 2026**:
+
+- [x] `/api/health` returns `ok: true`.
+- [x] The home page loads over HTTPS with the Ludo ANSARY title and metadata.
+- [x] A 4-player room can be created and `/room/CODE` opens the board.
+- [x] Two independent clients join, ready up, and start a game.
+- [x] Dice rolls and moves sync in both directions.
+- [x] A dropped client rejoins with its seat secret and keeps the same colour.
+- [x] A complete game reaches the result overlay with rankings for both clients.
+- [x] The host can start a rematch (`moveCount` back to 0).
+- [x] The mobile layout works at a 390–423 px viewport with no horizontal scroll.
+- [x] The browser connects over a real WebSocket upgrade with no console errors.
+- [x] Compressed HTML/JS and the SPA fallback for deep links work on the host.
