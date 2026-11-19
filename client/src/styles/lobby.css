@@ -1,0 +1,618 @@
+/* ==========================================================================
+   Ludo ANSARY — room bar, lobby & player cards
+   ========================================================================== */
+
+/* Room top bar ----------------------------------------------------------- */
+.room-bar {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem clamp(0.7rem, 2.4vw, 1.4rem);
+  background: rgba(7, 16, 25, 0.82);
+  border-bottom: 1px solid var(--stroke);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+.room-bar__left,
+.room-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.room-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.6rem;
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.room-code:hover {
+  background: rgba(255, 255, 255, 0.075);
+  border-color: var(--stroke-strong);
+}
+
+.room-code__label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.room-code__value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--gold-2);
+}
+
+.room-code svg {
+  color: var(--muted-2);
+  flex: none;
+}
+
+.conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.conn--live {
+  color: #bff0d6;
+  background: rgba(58, 169, 107, 0.13);
+  border-color: rgba(58, 169, 107, 0.28);
+}
+
+.conn--off {
+  color: #ffd9a6;
+  background: rgba(239, 176, 45, 0.13);
+  border-color: rgba(239, 176, 45, 0.3);
+}
+
+.conn--off svg {
+  animation: pulse-soft 1.4s ease-in-out infinite;
+}
+
+/* Lobby shell ------------------------------------------------------------ */
+.lobby {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.lobby__main {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: start;
+  gap: clamp(0.9rem, 2vw, 1.4rem);
+  width: min(1180px, 100% - 2rem);
+  margin: clamp(0.9rem, 2.4vw, 1.6rem) auto clamp(2rem, 4vw, 3rem);
+}
+
+/* Invite card ------------------------------------------------------------ */
+.lobby__invite {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.lobby__code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lobby__code-label {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.lobby__code {
+  margin-top: 0.15rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(1.65rem, 4vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  line-height: 1.1;
+  background: linear-gradient(120deg, #f9ebc4, #e2b95f 55%, #b98d2d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem 0.45rem 0.8rem;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: rgba(3, 10, 17, 0.6);
+}
+
+.share__link {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 170px;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.share__link > svg {
+  flex: none;
+  color: var(--gold);
+}
+
+.share__url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share__actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.share--compact {
+  padding-block: 0.35rem;
+}
+
+/* Seat chips ------------------------------------------------------------- */
+.lobby__seats-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.seat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  padding: 0.33rem 0.6rem;
+  border-radius: 999px;
+  border: 1px dashed var(--stroke-strong);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted-2);
+  font-size: 0.74rem;
+  font-weight: 550;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seat-chip.is-filled {
+  border-style: solid;
+  border-color: var(--stroke);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.lobby__rules-label {
+  margin-bottom: 0.45rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.lobby__tips {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--stroke);
+}
+
+.lobby__tips p {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.lobby__tips svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--gold);
+}
+
+/* Players card ----------------------------------------------------------- */
+.lobby__players {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.lobby__players-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lobby__players-head h2 {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+
+.lobby__players-head p {
+  margin-top: 0.2rem;
+  font-size: 0.79rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.lobby__count {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  line-height: 1;
+  color: var(--gold-2);
+  white-space: nowrap;
+}
+
+.lobby__count span {
+  font-size: 0.9rem;
+  color: var(--muted-2);
+}
+
+.lobby__seat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.lobby__seat-grid > .pcard:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.lobby__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: auto;
+  padding-top: 0.95rem;
+  border-top: 1px solid var(--stroke);
+}
+
+.lobby__footer .btn {
+  width: 100%;
+}
+
+.lobby__footer-hint {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--muted-2);
+}
+
+/* Player card ------------------------------------------------------------ */
+.pcard {
+  --accent: var(--c-red);
+  --grad: linear-gradient(150deg, var(--c-red-light), var(--c-red-deep));
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.6rem 0.65rem 0.6rem 0.8rem;
+  border-radius: 16px;
+  border: 1px solid var(--stroke);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018));
+  overflow: hidden;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.25s;
+}
+
+.pcard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--grad);
+  opacity: 0.85;
+}
+
+.pcard--red {
+  --accent: var(--c-red);
+  --grad: linear-gradient(150deg, var(--c-red-light), var(--c-red-deep));
+}
+
+.pcard--green {
+  --accent: var(--c-green);
+  --grad: linear-gradient(150deg, var(--c-green-light), var(--c-green-deep));
+}
+
+.pcard--yellow {
+  --accent: var(--c-yellow);
+  --grad: linear-gradient(150deg, var(--c-yellow-light), var(--c-yellow-deep));
+}
+
+.pcard--blue {
+  --accent: var(--c-blue);
+  --grad: linear-gradient(150deg, var(--c-blue-light), var(--c-blue-deep));
+}
+
+.pcard--turn {
+  border-color: var(--accent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+  box-shadow: 0 12px 30px -20px var(--accent);
+}
+
+.pcard--turn::after {
+  content: '';
+  position: absolute;
+  right: -20px;
+  top: -30px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent), transparent 68%);
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.pcard--me {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+}
+
+.pcard--empty {
+  border-style: dashed;
+  border-color: var(--stroke-strong);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.pcard--empty::before {
+  opacity: 0.25;
+}
+
+.pcard--offline .pcard__avatar {
+  filter: grayscale(0.65) brightness(0.75);
+}
+
+.pcard--offline .pcard__name {
+  color: var(--muted);
+}
+
+.pcard__avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--grad);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    0 6px 14px -6px rgba(0, 0, 0, 0.8);
+}
+
+.pcard--empty .pcard__avatar {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed var(--stroke-strong);
+  box-shadow: none;
+  color: var(--muted-2);
+}
+
+.pcard__plus {
+  font-size: 1.1rem;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.pcard__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.pcard__name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.pcard__name {
+  font-size: 0.87rem;
+  font-weight: 650;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pcard__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--muted-2);
+}
+
+.pcard__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.pcard__dot--red {
+  background: var(--c-red);
+}
+
+.pcard__dot--green {
+  background: var(--c-green);
+}
+
+.pcard__dot--yellow {
+  background: var(--c-yellow);
+}
+
+.pcard__dot--blue {
+  background: var(--c-blue);
+}
+
+.pcard__conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--c-green-light);
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+
+.pcard__conn.is-offline {
+  color: var(--c-yellow-light);
+}
+
+.pcard__stats {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.05rem;
+}
+
+.pcard__homes {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.pcard__home-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+}
+
+.pcard__home-dot.is-filled {
+  background: var(--gold-2);
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 5px rgba(246, 223, 164, 0.55);
+}
+
+.pcard__stat {
+  font-size: 0.67rem;
+  color: var(--muted-2);
+}
+
+.pcard__autoplay {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--c-yellow-light);
+}
+
+.pcard__kick {
+  align-self: flex-start;
+  flex: none;
+  padding: 0.24rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(224, 82, 75, 0.26);
+  background: rgba(224, 82, 75, 0.1);
+  color: #ffb8b3;
+  font-size: 0.62rem;
+  font-weight: 650;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.pcard__kick:hover {
+  background: rgba(224, 82, 75, 0.22);
+  border-color: rgba(224, 82, 75, 0.5);
+}
+
+/* Responsive ------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .lobby__main {
+    grid-template-columns: minmax(0, 1fr);
+    width: min(1180px, 100% - 1.4rem);
+  }
+}
+
+@media (max-width: 760px) {
+  .conn__text {
+    display: none;
+  }
+
+  .conn {
+    padding: 0.32rem;
+  }
+
+  .room-code__label {
+    display: none;
+  }
+
+  .room-code__value {
+    font-size: 0.8rem;
+  }
+
+  .room-bar .logo__text {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .lobby__seat-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lobby__seat-grid > .pcard:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  .share__actions {
+    width: 100%;
+  }
+
+  .share__actions .btn {
+    flex: 1;
+  }
+
+  .pcard__kick {
+    padding: 0.24rem 0.4rem;
+  }
+}

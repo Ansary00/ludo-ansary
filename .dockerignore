@@ -1,0 +1,12 @@
+node_modules
+client/dist
+server/dist
+tests
+scripts/preview-result.ts
+scripts/preview.log
+*.log
+.git
+.gitignore
+.env
+.env.*
+coverage
