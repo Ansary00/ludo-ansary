@@ -79,6 +79,7 @@ export function createLudoServer(options: CreateLudoServerOptions = {}): LudoSer
 
   const hub = new GameHub(io, config);
   const socketLimiter = new RateLimiter(120, 10_000);
+  const chatLimiter = new RateLimiter(5, 10_000);
 
   app.get('/api/health', (_req, res) => {
     res.json({
@@ -245,13 +246,35 @@ export function createLudoServer(options: CreateLudoServerOptions = {}): LudoSer
       }
     });
 
+    socket.on('chat:send', (payload, ack) => {
+      if (typeof ack !== 'function') return;
+      if (!allow()) return rateLimited(ack);
+      if (!chatLimiter.allow(socket.id)) {
+        ack({
+          ok: false,
+          error: { code: 'chat-rate-limited', message: 'Slow down — too many messages at once.' },
+        });
+        return;
+      }
+      try {
+        ack(hub.chat(socket, payload));
+      } catch (error) {
+        console.error('[chat:send]', error);
+        ack({ ok: false, error: { code: 'server-error', message: 'Could not send that message.' } });
+      }
+    });
+
     socket.on('disconnect', () => {
       socketLimiter.forget(socket.id);
+      chatLimiter.forget(socket.id);
       hub.disconnect(socket);
     });
   });
 
-  const sweepTimer = setInterval(() => hub.sweep(), 45_000);
+  const sweepTimer = setInterval(() => {
+    hub.sweep();
+    chatLimiter.sweep();
+  }, 45_000);
   sweepTimer.unref?.();
 
   const listen = (port = 0): Promise<number> =>

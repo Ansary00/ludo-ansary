@@ -3,6 +3,7 @@ import type { Server, Socket } from 'socket.io';
 import {
   GameError,
   applyMove,
+  buildChatContent,
   chooseAutoMove,
   colorsForRoomSize,
   createGame,
@@ -13,6 +14,8 @@ import {
 } from '../../shared/src/index.ts';
 import type {
   Ack,
+  ChatInput,
+  ChatMessage,
   ClientToServerEvents,
   GameEvent,
   GameState,
@@ -483,6 +486,29 @@ export class GameHub {
     }
     this.broadcast(room);
     return ok({ moved: true });
+  }
+
+  // -------------------------------------------------------------------------
+  // Chat
+  // -------------------------------------------------------------------------
+
+  chat(socket: HubSocket, payload: ChatInput | null | undefined): Ack<ChatMessage> {
+    const { room, player } = this.resolve(socket);
+    if (!room || !player) return fail('not-in-room', 'You are not in a room.');
+
+    const built = buildChatContent(payload);
+    if (!built.ok) return fail(built.code, built.message);
+
+    const message: ChatMessage = {
+      id: randomId(),
+      playerId: player.id,
+      name: player.name,
+      color: player.color,
+      ...built.content,
+      at: this.now(),
+    };
+    this.io.to(room.code).emit('chat:message', message);
+    return ok(message);
   }
 
   // -------------------------------------------------------------------------

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { io, type Socket } from 'socket.io-client';
 
 import { createLudoServer, type LudoServer } from '../server/src/app.ts';
+import type { ChatMessage } from '../shared/src/chat.ts';
 import { getLegalMoves } from '../shared/src/engine.ts';
 import type { Ack, GameEvent, JoinResult, RoomSnapshot } from '../shared/src/protocol.ts';
 
@@ -39,6 +40,7 @@ interface Client {
   socket: Socket;
   states: RoomSnapshot[];
   events: GameEvent[];
+  chat: ChatMessage[];
   closedReasons: string[];
   replaced: boolean;
   request<T>(event: string, payload?: unknown): Promise<Ack<T>>;
@@ -61,6 +63,7 @@ async function connectClient(target = url): Promise<Client> {
     socket,
     states: [],
     events: [],
+    chat: [],
     closedReasons: [],
     replaced: false,
     request<T>(event: string, payload?: unknown) {
@@ -87,6 +90,7 @@ async function connectClient(target = url): Promise<Client> {
   };
   socket.on('room:state', (state: RoomSnapshot) => client.states.push(state));
   socket.on('game:event', (event: GameEvent) => client.events.push(event));
+  socket.on('chat:message', (message: ChatMessage) => client.chat.push(message));
   socket.on('room:closed', (payload: { reason: string }) => client.closedReasons.push(payload.reason));
   socket.on('session:replaced', () => {
     client.replaced = true;
@@ -476,5 +480,105 @@ test('state is consistent across three and four player rooms', async () => {
     } finally {
       clients.forEach((c) => c.close());
     }
+  }
+});
+
+test('chat relays whitelisted presets and emoji to every player', async () => {
+  const { host, guest } = await startedGame();
+  const stranger = await connectClient();
+  try {
+    // Preset text is resolved on the server; a client-supplied text is ignored.
+    const preset = await host.request<ChatMessage>('chat:send', {
+      kind: 'preset',
+      presetId: 'nice',
+      text: 'totally different text',
+    });
+    assert.equal(preset.ok, true, JSON.stringify(preset));
+    const presetData = (preset as { ok: true; data: ChatMessage }).data;
+    assert.equal(presetData.text, 'Nice move!');
+    assert.equal(presetData.kind, 'preset');
+    assert.equal(presetData.name, 'Host');
+    assert.equal(presetData.color, 'red');
+
+    await waitUntil(() => guest.chat.length >= 1, 'guest receives the preset');
+    assert.equal(guest.chat[0]?.text, 'Nice move!');
+
+    const emoji = await guest.request<ChatMessage>('chat:send', { kind: 'emoji', emoji: '🔥' });
+    assert.equal(emoji.ok, true, JSON.stringify(emoji));
+    await waitUntil(() => host.chat.length >= 2, 'host receives the emoji');
+    assert.equal(host.chat.at(-1)?.emoji, '🔥');
+    assert.equal(host.chat.at(-1)?.text, '🔥');
+
+    const badEmoji = await host.request('chat:send', { kind: 'emoji', emoji: '💩' });
+    assert.equal(badEmoji.ok, false);
+    assert.equal((badEmoji as { error: { code: string } }).error.code, 'chat-invalid');
+
+    const badPreset = await host.request('chat:send', { kind: 'preset', presetId: 'made-up' });
+    assert.equal(badPreset.ok, false);
+    assert.equal((badPreset as { error: { code: string } }).error.code, 'chat-invalid');
+
+    const strangerChat = await stranger.request('chat:send', { kind: 'preset', presetId: 'nice' });
+    assert.equal(strangerChat.ok, false);
+    assert.equal((strangerChat as { error: { code: string } }).error.code, 'not-in-room');
+  } finally {
+    host.close();
+    guest.close();
+    stranger.close();
+  }
+});
+
+test('free chat strips markup, filters profanity and caps length', async () => {
+  const { host, guest } = await startedGame();
+  try {
+    const clean = await host.request<ChatMessage>('chat:send', {
+      kind: 'text',
+      text: '  <b>Class</b> act — nice roll!  ',
+    });
+    assert.equal(clean.ok, true, JSON.stringify(clean));
+    assert.equal((clean as { ok: true; data: ChatMessage }).data.text, 'Class act — nice roll!');
+
+    const empty = await host.request('chat:send', { kind: 'text', text: '    ' });
+    assert.equal(empty.ok, false);
+    assert.equal((empty as { error: { code: string } }).error.code, 'chat-empty');
+
+    for (const blocked of ['what the fuck', 'you a55hole', 'total bullsh1t']) {
+      const response = await host.request('chat:send', { kind: 'text', text: blocked });
+      assert.equal(response.ok, false, blocked);
+      assert.equal(
+        (response as { error: { code: string } }).error.code,
+        'chat-blocked',
+        blocked,
+      );
+    }
+
+    // Substrings of blocked words inside ordinary words stay untouched.
+    // The guest's socket has its own chat quota, so the test stays under 5 per socket.
+    const ordinary = await guest.request<ChatMessage>('chat:send', {
+      kind: 'text',
+      text: 'The class assignment passed.',
+    });
+    assert.equal(ordinary.ok, true, JSON.stringify(ordinary));
+
+    const long = await guest.request<ChatMessage>('chat:send', { kind: 'text', text: 'a'.repeat(400) });
+    assert.equal(long.ok, true);
+    assert.equal((long as { ok: true; data: ChatMessage }).data.text.length, 120);
+  } finally {
+    host.close();
+    guest.close();
+  }
+});
+
+test('chat is rate limited per socket', async () => {
+  const { host } = await startedGame();
+  try {
+    for (let i = 0; i < 5; i += 1) {
+      const response = await host.request('chat:send', { kind: 'text', text: `hello ${i}` });
+      assert.equal(response.ok, true, `message ${i}: ${JSON.stringify(response)}`);
+    }
+    const limited = await host.request('chat:send', { kind: 'text', text: 'one too many' });
+    assert.equal(limited.ok, false);
+    assert.equal((limited as { error: { code: string } }).error.code, 'chat-rate-limited');
+  } finally {
+    host.close();
   }
 });

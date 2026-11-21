@@ -1,58 +1,57 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { FINAL_STEP } from '@shared/board.ts';
-import type { Color, LogEntry } from '@shared/types.ts';
+import type { ChatInput } from '@shared/chat.ts';
 
 import Board from '../components/Board.tsx';
+import ChatDock from '../components/ChatDock.tsx';
 import Confetti from '../components/Confetti.tsx';
 import Dice from '../components/Dice.tsx';
-import { IconClock, IconSparkle, IconTrophy } from '../components/Icons.tsx';
-import PlayerCard from '../components/PlayerCard.tsx';
-import RoomTopBar from '../components/RoomTopBar.tsx';
+import {
+  IconChat,
+  IconCheck,
+  IconClock,
+  IconCopy,
+  IconDice,
+  IconLogout,
+  IconTrophy,
+} from '../components/Icons.tsx';
+import { Logo } from '../components/Logo.tsx';
+import SettingsMenu from '../components/SettingsMenu.tsx';
 import { useCountdown } from '../components/Toggle.tsx';
 import { useTokenAnimation } from '../hooks/useTokenAnimation.ts';
 import { COLOR_LABEL, initials, ordinal, plural } from '../lib/format.ts';
 import type { RoomSession } from '../lib/session.tsx';
 import { useSettings } from '../lib/settings.tsx';
+import { copyText } from '../lib/share.ts';
+import { useToast } from '../lib/toast.tsx';
 
-function logText(entry: LogEntry, players: { color: Color; name: string }[]): string {
-  const name = players.find((player) => player.color === entry.color)?.name ?? COLOR_LABEL[entry.color];
-  switch (entry.type) {
-    case 'roll':
-      return `${name} rolled ${entry.dice}`;
-    case 'move':
-      return `${name} moved a token`;
-    case 'capture': {
-      const count = entry.captured?.length ?? 0;
-      return `${name} captured ${count} token${count === 1 ? '' : 's'}`;
-    }
-    case 'finish':
-      return `${name} brought a token home`;
-    case 'pass':
-      return `${name} had no legal move`;
-    case 'forfeit':
-      return `${name} lost the turn`;
-    case 'start':
-      return 'Game started';
-    case 'end':
-      return `${name} won the game`;
-    default:
-      return '';
-  }
+function clock(ms: number): string {
+  const safe = Math.max(0, ms);
+  return `${Math.floor(safe / 60000)}:${String(Math.floor((safe % 60000) / 1000)).padStart(2, '0')}`;
 }
 
 export default function GameView({ session, onExit }: { session: RoomSession; onExit: () => void }) {
   const navigate = useNavigate();
   const { settings, play } = useSettings();
+  const { push } = useToast();
   const snapshot = session.snapshot;
   const me = session.me;
   const game = snapshot?.game ?? null;
   const { tokens, ghosts } = useTokenAnimation(game);
   const [rolling, setRolling] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const [burst, setBurst] = useState<{ id: string; emoji: string } | null>(null);
+  const chatLengthRef = useRef(0);
 
   const lastEvent = session.events[session.events.length - 1];
   const autoSeconds = useCountdown(snapshot?.autoPlayAt ?? null);
+  const finished = snapshot?.phase === 'finished';
+  const lastChat = session.chat[session.chat.length - 1];
 
   useEffect(() => {
     if (lastEvent?.type !== 'rolled') return;
@@ -61,15 +60,47 @@ export default function GameView({ session, onExit }: { session: RoomSession; on
     return () => window.clearTimeout(timer);
   }, [lastEvent]);
 
+  useEffect(() => {
+    if (finished) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [finished]);
+
+  useEffect(() => {
+    const previous = chatLengthRef.current;
+    chatLengthRef.current = session.chat.length;
+    if (session.chat.length <= previous) return;
+    if (!chatOpen && lastChat?.playerId !== me?.id) {
+      setUnread((count) => count + (session.chat.length - previous));
+    }
+  }, [session.chat, chatOpen, lastChat, me?.id]);
+
+  useEffect(() => {
+    if (lastChat?.kind !== 'emoji') return;
+    setBurst({ id: lastChat.id, emoji: lastChat.emoji ?? lastChat.text });
+  }, [lastChat]);
+
+  useEffect(() => {
+    if (!burst) return;
+    const timer = window.setTimeout(() => setBurst(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [burst]);
+
+  useEffect(() => {
+    if (chatOpen) setUnread(0);
+  }, [chatOpen]);
+
   const activeColor = game?.turnColor ?? null;
   const activePlayer = useMemo(
-    () => (activeColor && snapshot ? snapshot.players.find((player) => player.color === activeColor) ?? null : null),
+    () =>
+      activeColor && snapshot
+        ? snapshot.players.find((player) => player.color === activeColor) ?? null
+        : null,
     [activeColor, snapshot],
   );
   const isMyTurn = Boolean(session.isMyTurn);
   const canRoll = Boolean(isMyTurn && game && game.dice === null);
   const movable = isMyTurn ? session.legalMoves : [];
-  const finished = snapshot?.phase === 'finished';
 
   if (!snapshot || !game || !me) return null;
 
@@ -80,7 +111,9 @@ export default function GameView({ session, onExit }: { session: RoomSession; on
     if (isMyTurn) {
       if (game.dice === null) return 'Tap the dice to roll';
       if (movable.length === 0) return 'No legal move — passing…';
-      return movable.length === 1 ? 'Move your highlighted token' : `Choose one of ${movable.length} moves`;
+      return movable.length === 1
+        ? 'Move your highlighted token'
+        : `Choose one of ${movable.length} moves`;
     }
     if (activePlayer && !activePlayer.connected) {
       return autoSeconds > 0 ? `Auto-play in ${autoSeconds}s` : 'Auto-playing…';
@@ -88,9 +121,20 @@ export default function GameView({ session, onExit }: { session: RoomSession; on
     return `${activePlayer?.name ?? 'Player'} is thinking…`;
   })();
 
-  const playersForLog = snapshot.players.map((player) => ({ color: player.color, name: player.name }));
-  const logEntries = [...game.log].slice(-12).reverse();
-  const durationMs = (game.finishedAt ?? Date.now()) - game.startedAt;
+  const durationMs = (game.finishedAt ?? now) - game.startedAt;
+  const players = [...snapshot.players].sort((a, b) => a.seat - b.seat);
+
+  const copyCode = async () => {
+    const ok = await copyText(snapshot.code);
+    if (!ok) return;
+    setCopied(true);
+    push('Room code copied.', 'success');
+    window.setTimeout(() => setCopied(false), 1600);
+  };
+
+  const sendChat = (input: ChatInput) => {
+    void session.sendChat(input);
+  };
 
   const goHome = async () => {
     await session.leave();
@@ -99,49 +143,130 @@ export default function GameView({ session, onExit }: { session: RoomSession; on
 
   return (
     <div className="game">
-      <RoomTopBar code={snapshot.code} connected={session.connected} onExit={onExit} exitLabel="Exit game" />
+      <header className="play-bar">
+        <div className="play-bar__left">
+          <button type="button" className="icon-btn play-bar__exit" onClick={onExit} aria-label="Exit game">
+            <IconLogout size={18} />
+          </button>
+          <span className="play-bar__brand">
+            <Logo compact />
+          </span>
+          <button
+            type="button"
+            className={`play-bar__code ${copied ? 'is-copied' : ''}`}
+            onClick={() => void copyCode()}
+            title="Copy room code"
+          >
+            <span className="play-bar__code-label">Room</span>
+            <strong>{snapshot.code}</strong>
+            {copied ? <IconCheck size={13} /> : <IconCopy size={13} />}
+          </button>
+        </div>
 
-      <main className="game__main">
-        <aside className="game__players" aria-label="Players">
-          {snapshot.players
-            .slice()
-            .sort((a, b) => a.seat - b.seat)
-            .map((player) => (
-              <PlayerCard
+        <div className="play-bar__chips" aria-label="Players">
+          {players.map((player) => {
+            const home = game.tokens[player.color].filter((pos) => pos === FINAL_STEP).length;
+            const isTurn = !finished && game.turnColor === player.color;
+            return (
+              <span
                 key={player.id}
-                player={player}
-                color={player.color}
-                isTurn={!finished && game.turnColor === player.color}
-                isMe={player.id === me.id}
-                tokensHome={game.tokens[player.color].filter((pos) => pos === FINAL_STEP).length}
-                captures={game.stats[player.color].captures}
-                autoPlayAt={snapshot.autoPlayAt}
-              />
-            ))}
-        </aside>
+                className={[
+                  'player-chip',
+                  `player-chip--${player.color}`,
+                  isTurn ? 'is-turn' : '',
+                  player.id === me.id ? 'is-me' : '',
+                  player.connected ? '' : 'is-offline',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                title={`${player.name} · ${home}/4 tokens home`}
+              >
+                <span className="player-chip__avatar" aria-hidden="true">
+                  {initials(player.name)}
+                </span>
+                <span className="player-chip__meta">
+                  <span className="player-chip__name">
+                    {player.name}
+                    {player.id === me.id && <em>you</em>}
+                  </span>
+                  <span className="player-chip__home">{home}/4 home</span>
+                </span>
+                {isTurn && (
+                  <span className="player-chip__turn" aria-label="Their turn">
+                    <IconDice size={12} />
+                  </span>
+                )}
+              </span>
+            );
+          })}
+        </div>
 
-        <section className="game__board-area">
-          <div className={`game__banner ${isMyTurn ? 'is-mine' : ''}`} data-color={activeColor ?? undefined}>
-            <span className="game__banner-dot" />
-            <span className="game__banner-text">{finished ? 'Game over' : myTurnLabel}</span>
-            <span className="game__banner-hint">{hint}</span>
-            <span className="game__timer">
-              <IconClock size={13} /> {Math.floor(durationMs / 60000)}:
-              {String(Math.floor((durationMs % 60000) / 1000)).padStart(2, '0')}
+        <div className="play-bar__right">
+          <button
+            type="button"
+            className={`chat-fab ${chatOpen ? 'is-active' : ''}`}
+            onClick={() => setChatOpen((open) => !open)}
+            aria-label={chatOpen ? 'Close chat' : 'Open chat'}
+            aria-expanded={chatOpen}
+            title="Table chat"
+          >
+            <IconChat size={19} />
+            {unread > 0 && !chatOpen && <span className="chat-fab__badge">{unread > 9 ? '9+' : unread}</span>}
+          </button>
+          <SettingsMenu />
+        </div>
+      </header>
+
+      <main className="game__table">
+        <div className="game__stage">
+          <div className="game__status" data-color={activeColor ?? undefined}>
+            <span className="game__status-dot" aria-hidden="true" />
+            <span className="game__status-text">{finished ? 'Game over' : myTurnLabel}</span>
+            <span className="game__status-hint">{hint}</span>
+            <span className="game__clock" aria-label="Game time">
+              <IconClock size={12} /> {clock(durationMs)}
             </span>
           </div>
 
-          <Board
-            tokens={tokens}
-            activeColors={game.activeColors}
-            currentTurn={finished ? null : game.turnColor}
-            myColor={me.color}
-            movable={movable}
-            onTokenSelect={(_color, tokenId) => void session.move(tokenId)}
-            ghosts={ghosts}
-          />
+          <div className="game__board-shell">
+            <Board
+              tokens={tokens}
+              activeColors={game.activeColors}
+              currentTurn={finished ? null : game.turnColor}
+              myColor={me.color}
+              movable={movable}
+              onTokenSelect={(_color, tokenId) => void session.move(tokenId)}
+              ghosts={ghosts}
+            />
+            {burst && (
+              <span key={burst.id} className="emoji-burst" aria-hidden="true">
+                {burst.emoji}
+              </span>
+            )}
+          </div>
 
-          <div className="game__dock">
+          <div className={`game-controls ${isMyTurn ? 'is-mine' : ''}`} data-color={activeColor ?? undefined}>
+            <div className="game-controls__who">
+              <span
+                className={`game-controls__swatch game-controls__swatch--${activeColor ?? 'red'}`}
+                aria-hidden="true"
+              />
+              <span className="game-controls__text">
+                <span className="game-controls__eyebrow">
+                  {finished ? 'Final result' : isMyTurn ? 'Your move' : 'Now playing'}
+                </span>
+                <span className="game-controls__name">
+                  {finished ? 'Game over' : isMyTurn ? 'You' : activePlayer?.name ?? '—'}
+                </span>
+                <span className="game-controls__state">
+                  {finished
+                    ? 'The board is settled.'
+                    : game.dice === null
+                      ? 'Waiting for the dice…'
+                      : `Rolled ${game.dice}${game.dice === 6 ? ' · extra turn' : ''}`}
+                </span>
+              </span>
+            </div>
             <Dice
               value={game.dice}
               rolling={rolling}
@@ -154,84 +279,23 @@ export default function GameView({ session, onExit }: { session: RoomSession; on
               hint={hint}
             />
           </div>
-        </section>
-
-        <aside className="game__side">
-          <div className={`turn-card ${isMyTurn ? 'turn-card--mine' : ''}`} data-color={activeColor ?? undefined}>
-            <p className="turn-card__eyebrow">
-              <IconSparkle size={13} />
-              {finished ? 'Final result' : isMyTurn ? 'Your move' : 'Now playing'}
-            </p>
-            <h2 className="turn-card__name">
-              {finished ? 'Game over' : isMyTurn ? 'You' : activePlayer?.name ?? '—'}
-              {!finished && activePlayer && (
-                <span className={`turn-card__swatch turn-card__swatch--${activeColor}`} aria-hidden="true" />
-              )}
-            </h2>
-            <p className="turn-card__state">
-              {finished
-                ? 'The board is settled.'
-                : game.dice === null
-                  ? 'Waiting for the dice…'
-                  : `Rolled ${game.dice}${game.dice === 6 ? ' · extra turn' : ''}`}
-            </p>
-            <div className="turn-card__dice-wrap">
-              <Dice
-                value={game.dice}
-                rolling={rolling}
-                canRoll={canRoll}
-                onRoll={() => {
-                  setRolling(true);
-                  play('click');
-                  void session.roll();
-                }}
-                hint={hint}
-              />
-            </div>
-          </div>
-
-          <div className="card log-card">
-            <header className="log-card__head">
-              <h3>Match feed</h3>
-              <span>{playersForLog.length} players</span>
-            </header>
-            <ul className="log">
-              {logEntries.length === 0 && <li className="log__empty">The first roll is still to come.</li>}
-              {logEntries.map((entry) => (
-                <li key={entry.id} className={`log__item log__item--${entry.type}`}>
-                  <span className={`log__dot log__dot--${entry.color}`} aria-hidden="true" />
-                  <span className="log__text">{logText(entry, playersForLog)}</span>
-                  <span className="log__time">
-                    {Math.floor(Math.max(0, entry.at - game.startedAt) / 60000)}:
-                    {String(Math.floor((Math.max(0, entry.at - game.startedAt) % 60000) / 1000)).padStart(2, '0')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <details className="side-rules">
-            <summary>Rules in play</summary>
-            <ul>
-              <li>Six to leave the base</li>
-              <li>Exact roll to reach home</li>
-              {snapshot.rules.extraTurnOnSix && <li>Extra turn on a six</li>}
-              {snapshot.rules.extraTurnOnCapture && <li>Extra turn after a capture</li>}
-              {snapshot.rules.extraTurnOnHome && <li>Extra turn on reaching home</li>}
-              {snapshot.rules.threeSixesForfeit && <li>Three sixes loses the turn</li>}
-              {snapshot.rules.captureOnSafe && <li>Captures allowed on safe squares</li>}
-              {!snapshot.rules.captureOnSafe && <li>Safe squares protect tokens</li>}
-            </ul>
-          </details>
-        </aside>
+        </div>
       </main>
+
+      <ChatDock
+        open={chatOpen}
+        messages={session.chat}
+        meId={me.id}
+        onClose={() => setChatOpen(false)}
+        onSend={sendChat}
+      />
 
       {finished && (
         <div className="result-overlay">
           <Confetti active={settings.animations} />
           <div className="result card" role="dialog" aria-modal="true" aria-label="Game result">
             <div className="result__badge">
-              <IconTrophy size={34} />
+              <IconTrophy size={32} />
             </div>
             <p className="eyebrow">Game over</p>
             <h1>{snapshot.players.find((p) => p.color === game.winner)?.name ?? 'Winner'} wins!</h1>
@@ -268,13 +332,16 @@ export default function GameView({ session, onExit }: { session: RoomSession; on
             </ol>
 
             <p className="result__meta">
-              {Math.floor(durationMs / 60000)}m {Math.floor((durationMs % 60000) / 1000)}s ·{' '}
-              {game.moveCount} token moves
+              {clock(durationMs)} · {game.moveCount} token moves
             </p>
 
             <div className="result__actions">
               {session.isHost ? (
-                <button type="button" className="btn btn--primary btn--lg" onClick={() => void session.rematch()}>
+                <button
+                  type="button"
+                  className="btn btn--primary btn--lg"
+                  onClick={() => void session.rematch()}
+                >
                   Play again
                 </button>
               ) : (

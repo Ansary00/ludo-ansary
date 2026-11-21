@@ -1,3 +1,4 @@
+import type { ChatInput, ChatMessage } from './chat.ts';
 import type { Color, GameState, Ranking, Rules } from './types.ts';
 
 export type RoomPhase = 'lobby' | 'playing' | 'finished';
@@ -108,12 +109,14 @@ export interface ClientToServerEvents {
     payload: { tokenId: number },
     ack: (res: Ack<{ moved: boolean }>) => void,
   ) => void;
+  'chat:send': (payload: ChatInput, ack: (res: Ack<ChatMessage>) => void) => void;
   'net:ping': (ack: (res: { ok: true; t: number }) => void) => void;
 }
 
 export interface ServerToClientEvents {
   'room:state': (snapshot: RoomSnapshot) => void;
   'game:event': (event: GameEvent) => void;
+  'chat:message': (message: ChatMessage) => void;
   'room:closed': (payload: { reason: string }) => void;
   'session:replaced': () => void;
   notice: (notice: ServerNotice) => void;

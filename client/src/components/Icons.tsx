@@ -214,3 +214,21 @@ export function IconFlag(props: IconProps) {
     </Icon>
   );
 }
+
+export function IconChat(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20.5 12a8 8 0 0 1-8 8H5.5l1.7-3.2A8 8 0 1 1 20.5 12z" />
+      <path d="M8.5 11h7M8.5 14.5h4.5" />
+    </Icon>
+  );
+}
+
+export function IconSend(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4.5 12 20 4.5 16.2 20l-4-6.2z" />
+      <path d="M12.2 13.8 20 4.5" />
+    </Icon>
+  );
+}

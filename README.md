@@ -7,7 +7,7 @@ rooms, invite links, classic rules, reconnection, and a fully responsive
 mobile-first interface — built to run on a single free Node.js service with no
 database and no paid APIs.
 
-![Winner overlay with final rankings](docs/result-screen.png)
+![Board-only play screen with table chat](docs/game-screen.jpg)
 
 ## What is included
 
@@ -28,11 +28,15 @@ database and no paid APIs.
   period, turns with no legal move pass automatically, idle hosts transfer after
   60 seconds, and stale rooms are cleaned up.
 - **Complete game flow.** Landing page, create/join, lobby with ready states,
-  live game, event log, winner overlay with rankings, and host-controlled
+  live board, in-game chat, winner overlay with rankings, and host-controlled
   rematch.
-- **Premium presentation.** Original vector artwork, animated token movement,
-  responsive desktop/mobile layouts, reduced-motion support, and sound effects
-  and music synthesized in the browser with the Web Audio API (no media files).
+- **In-game table chat.** Quick phrases, emoji reactions, and a filtered
+  free-text box, relayed by the server with per-socket rate limits. Messages
+  are never stored.
+- **Bright classic presentation.** Original vector board art in the familiar
+  Ludo colours, animated token movement, responsive desktop/mobile layouts,
+  reduced-motion support, and sound effects and music synthesized in the
+  browser with the Web Audio API (no media files).
 - **Zero-cost architecture.** One Node process serves the built React app and
   Socket.IO. In-memory rooms mean no database bill and no external services.
 
@@ -78,7 +82,7 @@ Socket.IO, and the built client. Use `PORT` to change the port.
 
 ```bash
 npm run typecheck   # TypeScript, no emit
-npm test            # 35 tests: rules engine + socket integration
+npm test            # 38 tests: rules engine + socket integration
 npm run build       # client bundle + server bundle
 ```
 

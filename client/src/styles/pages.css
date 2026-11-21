@@ -4,7 +4,7 @@
 
 .page--form {
   background:
-    radial-gradient(900px 460px at 50% -10%, rgba(226, 185, 95, 0.08), transparent 65%);
+    radial-gradient(900px 460px at 50% -10%, rgba(255, 205, 85, 0.28), transparent 65%);
 }
 
 .form-wrap {
@@ -24,14 +24,14 @@
   padding: 0.35rem 0.5rem;
   border-radius: 9px;
   font-size: 0.84rem;
-  font-weight: 600;
+  font-weight: 650;
   color: var(--muted);
   transition: color 0.2s, background 0.2s;
 }
 
 .back-link:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(47, 116, 224, 0.09);
 }
 
 .form-layout {
@@ -101,7 +101,7 @@
   padding: 0.75rem 0.7rem;
   border-radius: 16px;
   border: 1px solid var(--stroke);
-  background: rgba(255, 255, 255, 0.03);
+  background: #f8fbff;
   text-align: left;
   transition:
     border-color 0.2s,
@@ -111,17 +111,17 @@
 }
 
 .seat-picker__option:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: #eef5ff;
   border-color: var(--stroke-strong);
   transform: translateY(-1px);
 }
 
 .seat-picker__option.is-active {
-  border-color: rgba(226, 185, 95, 0.6);
-  background: linear-gradient(160deg, rgba(226, 185, 95, 0.15), rgba(226, 185, 95, 0.05));
+  border-color: rgba(47, 116, 224, 0.6);
+  background: linear-gradient(160deg, rgba(47, 116, 224, 0.14), rgba(47, 116, 224, 0.04));
   box-shadow:
-    0 0 0 1px rgba(226, 185, 95, 0.22),
-    0 14px 30px -22px rgba(226, 185, 95, 0.9);
+    0 0 0 1px rgba(47, 116, 224, 0.24),
+    0 14px 30px -22px rgba(47, 116, 224, 0.9);
 }
 
 .seat-picker__dots {
@@ -174,7 +174,7 @@
   margin-top: 1.15rem;
   border: 1px solid var(--stroke);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.025);
+  background: #f8fbff;
   overflow: hidden;
 }
 
@@ -196,7 +196,7 @@
 }
 
 .rules summary:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(47, 116, 224, 0.07);
 }
 
 .rules summary:focus-visible {
@@ -223,7 +223,7 @@
   align-items: center;
   gap: 1rem;
   padding: 0.62rem 0.45rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--stroke);
 }
 
 .rule-row__text {
@@ -273,7 +273,7 @@
   padding: 0.55rem 0.6rem;
   border-radius: 14px;
   border: 1px solid var(--stroke);
-  background: rgba(255, 255, 255, 0.03);
+  background: #f8fbff;
 }
 
 .preview-seat__avatar {
@@ -371,9 +371,9 @@
   height: 54px;
   margin: 0 auto 0.9rem;
   border-radius: 16px;
-  background: linear-gradient(160deg, rgba(226, 185, 95, 0.24), rgba(226, 185, 95, 0.05));
-  border: 1px solid rgba(226, 185, 95, 0.28);
-  color: var(--gold-2);
+  background: linear-gradient(160deg, #e8f1ff, #f7fbff);
+  border: 1px solid rgba(47, 116, 224, 0.24);
+  color: #2f74e0;
 }
 
 /* Join by invite --------------------------------------------------------- */
@@ -389,7 +389,7 @@
   gap: 0.55rem;
   padding: 0.5rem 0.7rem;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.035);
+  background: #f8fbff;
   border: 1px solid var(--stroke);
   font-size: 0.84rem;
 }
@@ -420,10 +420,10 @@
 .join-players__status {
   margin-left: auto;
   font-size: 0.68rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--c-green-light);
+  color: var(--c-green);
 }
 
 .join-players__status.is-offline {
@@ -436,17 +436,17 @@
   padding: 0.8rem;
   border-radius: 16px;
   border: 1px solid var(--stroke);
-  background: rgba(4, 11, 18, 0.45);
+  background: #f8fbff;
 }
 
 .room-peek.is-open {
-  border-color: rgba(58, 169, 107, 0.32);
-  background: rgba(58, 169, 107, 0.07);
+  border-color: rgba(33, 164, 79, 0.32);
+  background: rgba(33, 164, 79, 0.07);
 }
 
 .room-peek.is-closed {
-  border-color: rgba(224, 82, 75, 0.26);
-  background: rgba(224, 82, 75, 0.06);
+  border-color: rgba(232, 67, 60, 0.26);
+  background: rgba(232, 67, 60, 0.06);
 }
 
 .room-peek__head {
@@ -519,7 +519,7 @@
 }
 
 .room-peek.is-closed .room-peek__status {
-  color: #ffbcb7;
+  color: #b31c16;
 }
 
 /* Responsive ------------------------------------------------------------- */

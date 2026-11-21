@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getLegalMoves } from '@shared/engine.ts';
+import type { ChatInput, ChatMessage } from '@shared/chat.ts';
 import type { GameEvent, JoinResult, PeekInfo, PublicPlayer, RoomSnapshot } from '@shared/protocol.ts';
 import type { Color, Move } from '@shared/types.ts';
 
@@ -36,6 +37,7 @@ export function useRoomSession(rawCode: string) {
   const [status, setStatus] = useState<SessionStatus>('loading');
   const [error, setError] = useState<SessionError | null>(null);
   const [events, setEvents] = useState<GameEvent[]>([]);
+  const [chat, setChat] = useState<ChatMessage[]>([]);
   const [meId, setMeId] = useState<string | null>(null);
   const [connected, setConnected] = useState(socket.connected);
   const [busy, setBusy] = useState(false);
@@ -76,6 +78,7 @@ export function useRoomSession(rawCode: string) {
     setPeek(null);
     setError(null);
     setEvents([]);
+    setChat([]);
     setMeId(null);
     setBusy(false);
     setStatusSafe('loading');
@@ -179,8 +182,7 @@ export function useRoomSession(rawCode: string) {
           }
           break;
         case 'passed':
-          playRef.current('click');
-          pushRef.current(`${playerName(current, event.color)} had no legal move — turn skipped.`, 'info');
+          // A skipped turn is routine; keep the board quiet instead of toasting it.
           break;
         case 'forfeit':
           playRef.current('error');
@@ -201,6 +203,12 @@ export function useRoomSession(rawCode: string) {
         case 'kicked':
           break;
       }
+    };
+
+    const onChat = (message: ChatMessage) => {
+      if (!mountedRef.current) return;
+      setChat((previous) => [...previous.slice(-59), message]);
+      playRef.current('click');
     };
 
     const onClosed = (payload: { reason: string }) => {
@@ -259,6 +267,7 @@ export function useRoomSession(rawCode: string) {
 
     socket.on('room:state', onState);
     socket.on('game:event', onEvent);
+    socket.on('chat:message', onChat);
     socket.on('room:closed', onClosed);
     socket.on('session:replaced', onReplaced);
     socket.on('notice', onNotice);
@@ -268,6 +277,7 @@ export function useRoomSession(rawCode: string) {
     return () => {
       socket.off('room:state', onState);
       socket.off('game:event', onEvent);
+      socket.off('chat:message', onChat);
       socket.off('room:closed', onClosed);
       socket.off('session:replaced', onReplaced);
       socket.off('notice', onNotice);
@@ -395,6 +405,13 @@ export function useRoomSession(rawCode: string) {
     [act],
   );
 
+  const sendChat = useCallback(
+    async (input: ChatInput) => {
+      await act('chat:send', input);
+    },
+    [act],
+  );
+
   const leave = useCallback(async () => {
     await request('room:leave', undefined, 4000);
     clearSeat(code);
@@ -416,6 +433,7 @@ export function useRoomSession(rawCode: string) {
     isMyTurn,
     legalMoves,
     events,
+    chat,
     connected,
     busy,
     join,
@@ -425,6 +443,7 @@ export function useRoomSession(rawCode: string) {
     start,
     rematch,
     kick,
+    sendChat,
     leave,
     refreshPeek,
     retry: () => window.location.reload(),
