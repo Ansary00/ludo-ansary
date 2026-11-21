@@ -16,11 +16,12 @@ interface ChatDockProps {
   messages: ChatMessage[];
   meId: string;
   onClose: () => void;
-  onSend: (input: ChatInput) => void;
+  onSend: (input: ChatInput) => boolean | Promise<boolean>;
 }
 
 export default function ChatDock({ open, messages, meId, onClose, onSend }: ChatDockProps) {
   const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -32,16 +33,31 @@ export default function ChatDock({ open, messages, meId, onClose, onSend }: Chat
 
   useEffect(() => {
     if (!open) return;
+    if (!window.matchMedia('(pointer: fine)').matches) return;
     const timer = window.setTimeout(() => inputRef.current?.focus(), 120);
     return () => window.clearTimeout(timer);
   }, [open]);
 
-  const submit = (event: React.FormEvent) => {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     const value = text.trim();
-    if (!value) return;
-    onSend({ kind: 'text', text: value });
-    setText('');
+    if (!value || sending) return;
+    setSending(true);
+    try {
+      const accepted = await onSend({ kind: 'text', text: value });
+      if (accepted !== false) setText('');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -135,7 +151,7 @@ export default function ChatDock({ open, messages, meId, onClose, onSend }: Chat
         <button
           type="submit"
           className="chat-dock__send"
-          disabled={!text.trim()}
+          disabled={!text.trim() || sending}
           aria-label="Send message"
         >
           <IconSend size={18} />

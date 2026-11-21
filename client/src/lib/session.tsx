@@ -406,8 +406,8 @@ export function useRoomSession(rawCode: string) {
   );
 
   const sendChat = useCallback(
-    async (input: ChatInput) => {
-      await act('chat:send', input);
+    async (input: ChatInput): Promise<boolean> => {
+      return act('chat:send', input);
     },
     [act],
   );

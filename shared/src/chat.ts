@@ -124,7 +124,10 @@ function squash(value: string): string {
   return value.replace(/(.)\1+/g, '$1');
 }
 
-const BLOCKED_SQUASHED: ReadonlySet<string> = new Set(BLOCKED_WORDS.map(squash));
+const BLOCKED_EXACT: ReadonlySet<string> = new Set(BLOCKED_WORDS);
+const BLOCKED_SQUASHED: ReadonlySet<string> = new Set(
+  BLOCKED_WORDS.filter((word) => word.length >= 4).map(squash),
+);
 
 function normalizeText(value: string): string {
   return value
@@ -145,11 +148,15 @@ function normalizeText(value: string): string {
 export function containsProfanity(value: string): boolean {
   const normalized = normalizeText(value);
   if (!normalized) return false;
-  if (BLOCKED_PHRASES.some((phrase) => normalized.includes(phrase))) return true;
+  const padded = ` ${normalized} `;
+  if (BLOCKED_PHRASES.some((phrase) => padded.includes(` ${phrase} `))) return true;
   return normalized
     .split(' ')
     .filter(Boolean)
-    .some((token) => BLOCKED_SQUASHED.has(squash(token)));
+    .some((token) => {
+      if (BLOCKED_EXACT.has(token)) return true;
+      return token.length >= 4 && BLOCKED_SQUASHED.has(squash(token));
+    });
 }
 
 /** Strip control/HTML characters, collapse whitespace and cap the length. */

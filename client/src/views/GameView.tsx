@@ -132,9 +132,7 @@ export default function GameView({ session, onExit }: { session: RoomSession; on
     window.setTimeout(() => setCopied(false), 1600);
   };
 
-  const sendChat = (input: ChatInput) => {
-    void session.sendChat(input);
-  };
+  const sendChat = (input: ChatInput) => session.sendChat(input);
 
   const goHome = async () => {
     await session.leave();

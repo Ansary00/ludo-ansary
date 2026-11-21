@@ -82,7 +82,7 @@ Socket.IO, and the built client. Use `PORT` to change the port.
 
 ```bash
 npm run typecheck   # TypeScript, no emit
-npm test            # 38 tests: rules engine + socket integration
+npm test            # 40 tests: rules engine, chat filtering + socket integration
 npm run build       # client bundle + server bundle
 ```
 
